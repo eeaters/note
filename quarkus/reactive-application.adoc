@@ -1,0 +1,103 @@
+:toc:
+:toc-title: 一个响应式的应用程序
+
+== 网址
+https://quarkus.io/guides/getting-started-reactive[getting-startted-reactive]
+
+== 实现功能
+基于MySQL数据库之上,对一个表进行简单的操作
+
+== 流程
+=== 生成项目
+官方网站用的是 PostgreSQL , 这里改成了MySQL,其他不变
+选择依赖:
+
+. RESTEasy Reactive
+. RESTEASY Reactive Jackson
+. Hibernate Reactive with Panache
+. Reactive MySQL client
+
+=== 修改配置文件
+主要是为了修改mysql的配置:
+[source,properties]
+----
+quarkus.datasource-db-kind=mysql
+quarkus.hibernate-orm.database.generation=drop-and-create
+
+quarkus.datasource.reactive.url=mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=CTT
+quarkus.datasource.username=root
+quarkus.datasource.password=root
+----
+
+=== 编写初始化sql脚本
+在resources目录下建import.sql文件, 内容如下: 
+[source,sql]
+----
+INSERT INTO fruit(id, name) VALUES (1, 'Cherry');
+INSERT INTO fruit(id, name) VALUES (2, 'Apple');
+INSERT INTO fruit(id, name) VALUES (3, 'Banana');
+----
+
+=== 编写实体类及Web端口
+[source,java]
+----
+@Entity
+@Cacheable
+public class Fruit extends PanacheEntity {
+
+    @Column(length = 40, unique = true)
+    public String name;
+
+}
+
+// --------------------
+
+@Path("/fruits")
+@ApplicationScoped
+public class FruitResource {
+
+   @GET
+    @Path("list")
+    public Uni<List<Fruit>> list() {
+        return Fruit.listAll(Sort.by("name"));
+    }
+
+    @GET
+    @Path("get/{id}")
+    public Uni<Fruit> get(Long id) {
+        return Fruit.findById(id);
+    }
+
+    @GET
+    @Transactional
+    @Path("/delete/{id}")
+    public Uni<Long> delete(Long id) {
+        return Fruit.delete("id", id);
+    }
+
+
+    @GET
+    @Transactional
+    @Path("/update/{id}")
+    public Uni<Integer> update(Long id) {
+        return Fruit.update("name= 'update' where id = ?1", id);
+    }
+
+
+}
+
+----
+
+=== 项目启动及接口调用
+- `.\mvnw quarkus:dev` 
+- http://localhost:8080/fruits
+返回:
+[source,json]
+----
+[{"id":2,"name":"Apple"},{"id":3,"name":"Banana"},{"id":1,"name":"Cherry"}]
+----
+
+
+== 总结
+. 示例中数据库对象应该是充血模型吧.panache之前没有用过,只能安排上了
+. Uni这个对象在smallrye库下,又是一个响应式的编程库

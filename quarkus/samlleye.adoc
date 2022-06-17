@@ -1,0 +1,39 @@
+:toc:
+:toc-title: nutiny 和 quet
+
+== 参考文档
+
+. https://smallrye.io/smallrye-mutiny/pages/philosophy[mutiny官方文档]
+. https://quarkus.io/guides/qute[quarkus关于quet的quick-start]
+. https://github.com/quarkusio/quarkus/issues/6389[quet存在静态文件位置的issues]
+
+== 介绍
+
+=== mutiny
+一个响应式编程库,因为 https://cloud.tencent.com/developer/article/1914451[之前有了解过响应式编程] , 所以简单复习一下,也加深下印象
+
+=== quet
+官网介绍说这是为quarkus而出的库,利用一个模版引擎库
+
+
+== mutiny学习
+
+=== 与Project Reactor的对比
+先于Project Reactor进行一个对比
+
+. Mono -> Uni
+. Flux -> Multi
+
+=== Uni和Multi的区别
+
+在multiny的官方文档中,介绍了Uni和Multi的区别,这里记录一下:
+
+. Uni可以接受的元素可以是一个null值,Multi不允许是null值
+. Uni 无法接受 completion和request事件, 因为只有一个元素,这两个事件对它没有意义,
+. Uni能接受item事件和failure事件,但是最多接受一次
+
+=== 实际业务中对Uni和Multi的使用
+在对Uni和Multi的进行介绍时,开篇就提到了: 业务中很少由我们自己来创建一个Uni或者Multi,而是我们使用的客户端返回了一个Uni或者Multi对象 +
+换句话说, 通常我们写的代码是Processor的一环,而数据的源头及消费者则是由框架在处理的
+
+== quet学习

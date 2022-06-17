@@ -1,0 +1,17 @@
+:toc:
+:toc-title: 跨域
+
+== 参考链接
+
+. https://blog.csdn.net/weixin_43822787/article/details/121036722[options请求（跨域预检）]
+. http://www.ruanyifeng.com/blog/2016/04/cors.html[跨域资源共享 CORS 详解]
+
+== 自我理解
+. 跨域资源共享是浏览器的行为
+. 相同域的判断: protocol+port+host
+. 简单请求不触发预检
+. 预检就是先发送OPTION请求进行访问, 如果服务端允许跨域则发出真实的请求
+
+所以大概就是浏览器发送OPTION请求,服务端返回的header中会有相关信息 +
+浏览器判断如果服务端不允许跨域就直接跨域错误 +
+如果允许跨域,在发出真正的请求

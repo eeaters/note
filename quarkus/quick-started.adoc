@@ -1,0 +1,113 @@
+:toc:
+:toc-title: 快速开始
+
+== 为什么学习Quarkus
+从效果上来看SpringBoot3.0和Quarkus要做的事情是相同的,但是SpringBoot3.0毕竟会有很多历史包袱,很多标准规范在Spring中是通过适配的方式来实现的, +
+https://blog.csdn.net/xianzhan_/article/details/109266948[GraalVM - 云原生时代的 Java 笔记] 博客中在对GraalVM诞生背景中提到 Quarkus是在GraalVM上另起炉灶开发新的Java应用; +
+Quarkus相对比较新,社区也够活跃,想来目前很多标准规范也是严格执行的,所以想学习下Quarkus
+
+== 参考网址
+没有特别多的Quarkus的文档,因此主要以官方文档为主进行学习
+
+https://quarkus.io/guides/getting-started
+
+== 本地环境
+. JDK<官网要求最低11> 
+```
+$ java -version
+java version "18.0.1.1" 2022-04-22
+Java(TM) SE Runtime Environment (build 18.0.1.1+2-6)
+Java HotSpot(TM) 64-Bit Server VM (build 18.0.1.1+2-6, mixed mode, sharing)
+```
+[start=2]
+. Maven<官网要求最低3.8.1>
+```
+$ mvn -v
+Apache Maven 3.8.6 (84538c9988a25aec085021c365c560670ad80f63)
+Maven home: D:\framework\develop\maven\apache-maven-3.8.6
+Java version: 18.0.1.1, vendor: Oracle Corporation, runtime: C:\Program Files\Java\jdk-18.0.1.1
+Default locale: zh_CN, platform encoding: UTF-8
+OS name: "windows 10", version: "10.0", arch: "amd64", family: "windows"
+```
+
+== 学习流程
+=== 通过终端创建项目
+. 创建项目: 
+* `mvn io.quarkus.platform:quarkus-maven-plugin:2.9.2.Final:create  -DprojectGroupId=org.acme -DprojectArtifactId=getting-started -Dextensions="resteasy-reactive"`
+* https://code.quarkus.io/[通过官网右上方的`START CODING`脚手架创建项目]
+. 使用idea打开项目
+* 在Project Structure中修改下项目的JDK版本,Settings中修改Maven的版本.reLoad一下项目
+* 这一步因我的电脑的jdk从17->18,maven也是从3.6->3.8.6; 出现过打包不成功的问题,最终解决环境问题后均回复正常
+. 项目介绍
+* 一个maven结构的项目
+* 一个暴露了/hello的web端口 + 对应的Test单元测试类
+* 启动项目的首页
+* dockerfile的样例文件,包含了native模式和jvm模式
+* 一个空的应用配置文件
+. 单测
+* 直接Run某一个测试方法
+* 在控制台: `./mvnw test` 运行所有测试类
+
+运行结果如下: 
+```
+2022-06-13 15:38:05,060 INFO  [org.jbo.threads] (main) JBoss Threads version 3.4.2.Final
+2022-06-13 15:38:06,692 INFO  [io.quarkus] (main) getting-started 1.0.0-SNAPSHOT on JVM (powered by Quarkus 2.9.2.Final) started in 2.276s. Listening on: http://localhost:8081
+2022-06-13 15:38:06,693 INFO  [io.quarkus] (main) Profile test activated. 
+2022-06-13 15:38:06,693 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation, vertx]
+2022-06-13 15:38:08,166 INFO  [io.quarkus] (main) getting-started stopped in 0.034s
+```
+
+[start=5]
+. 启动项目
+* `.\mvnw compile quarkus:dev` 
+* maven如何debug, 之前的 https://cloud.tencent.com/developer/article/1990855[利用前端编译简化Feign降级代码]有写过
+
+. 本地访问
+* 访问localhost:8080
+
+=== Bean的注入
+. 评估一下这个Bean的作用域, 比如官方用例的 ApplicationScoped
+. 使用标准的Inject注解进行依赖注入
+
+代码:
+[source,java]
+----
+@Path("/hello")
+public class GreetingResource {
+
+    @Inject
+    GreetingService greetingService;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "Hello from RESTEasy Reactive";
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/greeting/{name}")
+    public String greeting(String name) {
+        return greetingService.greeting(name);
+    }
+}
+
+// ====
+
+@ApplicationScoped
+public class GreetingService {
+
+    public String greeting(String name) {
+        return name;
+    }
+
+}
+
+----
+
+== 总结
+. 简单了解了Quarkus的基本使用
+* 暴露web端口
+* 依赖注入
+. dev启动时,在首页可以看到有多少Bean,有多少web端点, 类似默认spring-boot-actuator的部分功能
+. dev启动时,服务拥有热部署的功能,类似XRebel的热部署功能,
