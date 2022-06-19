@@ -1,11 +1,14 @@
 :toc:
-:toc-title: nutiny 和 quet
+:toc-title: nutiny、quet 、restClient
 
 == 参考文档
 
 . https://smallrye.io/smallrye-mutiny/pages/philosophy[mutiny官方文档]
+. https://quarkus.io/guides/rest-client[rest-client官方文档]
+. https://quarkus.io/guides/qute[quet官方文档]
 . https://quarkus.io/guides/qute[quarkus关于quet的quick-start]
 . https://github.com/quarkusio/quarkus/issues/6389[quet存在静态文件位置的issues]
+
 
 == 介绍
 
@@ -15,6 +18,8 @@
 === quet
 官网介绍说这是为quarkus而出的库,利用一个模版引擎库
 
+=== rest-client
+类似于OpenFeign一样的组件,可以通过接口方式进行远程资源访问
 
 == mutiny学习
 
@@ -37,3 +42,113 @@
 换句话说, 通常我们写的代码是Processor的一环,而数据的源头及消费者则是由框架在处理的
 
 == quet学习
+
+=== 资源位置
+. 渲染的模版如html,xml,txt等存放在: resources/templates
+. 静态文件css/js/img存放位置: resources/META-INF/resources
+
+=== 资源定位
+在Web资源入口中,通过Template对应资源
+
+. 可以使用@Location来定位对应的资源
+. 不指定@Location时, Template的字段的名字login就是默认的资源位置
+. @Produces会对应渲染方式, 比如TEXT_HTML会当做html页面渲染,而TEXT_PLAIN则会当字符串进行渲染
+
+
+
+也可以使用@Location进行定位; 比如:
+
+[source,java]
+----
+@Path("store")
+public class LoginResource {
+
+    @Inject
+    Template store;
+
+//    @Inject
+//    @Location("store")
+//    Template store;
+
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance store(@QueryParam("storeName") String storeName) {
+        return store.data("stores", Store.mockList());
+    }
+}
+----
+=== html渲染 
+[source,html]
+----
+<table>
+    <thead>
+    <tr>
+        <th>门店id</th>
+        <th>门店名称</th>
+        <th>门店经纬度</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    {#for store in stores}
+    <tr>
+        <td>{store.storeId}</td>
+        <td>{store.storeName}</td>
+        <td>{store.longitude} , {store.latitude}</td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+----
+
+== rest-client
+=== 资源接口定义
+使用@RegisterRestClient将资源声明为一个资源接口 +
+quarkus的期望是将可变的行为放到配置文件中, 在configKey中设置一个配置的key(不设置则需要使用全类名,太长了) , 然后在配置文件中进行设置
+
+[source,java]
+----
+@RegisterRestClient(configKey = "baidu-client")
+public interface BaiduClient {
+    @GET
+    @Path("geocoder")
+    CompletionStage<String> geocoder(@QueryParam("output") String output, @QueryParam("location") String location);
+}
+----
+
+=== 资源配置
+在application.properties中对该资源进行配置,比如: 
+
+[source,properties]
+----
+quarkus.rest-client.baidu-client.url=http://api.map.baidu.com
+quarkus.rest-client.baidu-client.scope=javax.inject.Singleton
+----
+
+=== 资源注入
+注解不是@Inject了; 而是@RestClient,响应式中需要加@Blocking注解以正常运行
+
+[source,java]
+----
+    @RestClient
+    BaiduClient baiduClient;
+
+    @GET
+    @Path("geocoder")
+    @Blocking
+    public Uni<String> geocoder(@QueryParam("location") String location) {
+        return Uni.createFrom().completionStage(baiduClient.geocoder("json", location));
+    }
+----
+
+
+== 写在最后
+现在前端页面的渲染、web接口、远程资源访问、数据库访问 就全部打通了,再逐步的深入使用
+
+目前使用quarkus感觉良好,启动一下项目,然后就可以浪了, 举两个例子:
+
+- 项目启动快
+- 能够提前发现一些问题 ,如:删除一个html页面而对应Template没有删除,项目启动报错,
+- 项目一次启动,随便修改, 比如: 配置文件可以运行时修改, 新增了一个web接口不需要重启服务 就可以生效
+ 
+
